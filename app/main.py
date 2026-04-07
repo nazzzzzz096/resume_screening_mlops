@@ -7,7 +7,14 @@ import pandas as pd
 import joblib
 
 app = FastAPI()
+import logging
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger(__name__)
 # Prometheus
 Instrumentator().instrument(app).expose(app)
 
@@ -34,27 +41,33 @@ def predict_role(text):
 def home():
     return {"message": "Resume Screening API is running 🚀"}
 
-
 @app.post("/search")
 def search_candidates(request: SearchRequest):
-    predicted_role = predict_role(request.resume_text)
+    try:
+        logger.info("Request received")
 
-    df_filtered = df[df['Category'] == predicted_role].copy()
+        predicted_role = predict_role(request.resume_text)
 
-    query_embedding = semantic_model.encode(request.resume_text)
+        df_filtered = df[df['Category'] == predicted_role].copy()
 
-    df_filtered['score'] = df_filtered['Resume'].apply(
-        lambda text: cosine_similarity(
-            [query_embedding],
-            [semantic_model.encode(text)]
-        )[0][0]
-    )
+        query_embedding = semantic_model.encode(request.resume_text)
 
-    top = df_filtered.sort_values(by='score', ascending=False).head(5)
+        df_filtered['score'] = df_filtered['Resume'].apply(
+            lambda text: cosine_similarity(
+                [query_embedding],
+                [semantic_model.encode(text)]
+            )[0][0]
+        )
 
-    results = top[['name', 'email', 'phone', 'skills', 'score']].to_dict(orient="records")
+        top = df_filtered.sort_values(by='score', ascending=False).head(5)
 
-    return {
-        "predicted_role": predicted_role,
-        "top_candidates": results
-    }
+        logger.info("Request processed successfully")
+
+        return {
+            "predicted_role": predicted_role,
+            "top_candidates": top[['name','email','phone','skills','score']].to_dict(orient="records")
+        }
+
+    except Exception as e:
+        logger.error(f"Error occurred: {str(e)}")
+        return {"error": "Internal Server Error"}
