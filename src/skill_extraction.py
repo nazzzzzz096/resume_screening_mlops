@@ -19,7 +19,10 @@ def process_dataset(file_path):
     df['skills'] = df['Resume'].apply(extract_skills)
     return df
 
-
 if __name__ == "__main__":
     df = process_dataset("data/Enhanced_Resume_Data.csv")
+    
+    # SAVE UPDATED DATASET
+    df.to_csv("data/processed_resume.csv", index=False)
+    
     print(df[['name', 'skills']].head())
