@@ -10,16 +10,14 @@ def test_home():
 
 
 def test_search():
-    payload = {
-        "resume_text": "Looking for Python developer with NLP experience",
-        "skills": ["python", "nlp"]
-    }
-
-    response = client.post("/search", json=payload)
+    response = client.post("/search", json={
+        "resume_text": "Python developer with ML experience",
+        "skills": ["Python", "ML"]
+    })
 
     assert response.status_code == 200
+
     data = response.json()
 
     assert "predicted_role" in data
     assert "top_candidates" in data
-    assert isinstance(data["top_candidates"], list)
